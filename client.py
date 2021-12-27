@@ -55,13 +55,6 @@ class Client:
                         self.packets_q.put(0)
                     else:
                         print(data)
-                        # response = data.split("(")[1].split(")")
-                        # port = response[0].split(",")[1]
-                        # is_win = True if "Win" in response[1] else False
-                        # if is_win:
-                        #     print("Congratulations! You Won The Game")
-                        # else:
-                        #     print("Loser! You lose The Game")
                 else:
                     self.game_on = True
                     print(data)
