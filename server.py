@@ -21,7 +21,7 @@ class Server:
     def __init__(self, host, buffer_size=1024):
         self.host = host
         self.buffer_size = buffer_size
-        self.port = 5000
+        self.port = 13117
         self.clients = {}
         self.udp_server_socket = socket.socket(
             family=socket.AF_INET,
@@ -56,8 +56,8 @@ class Server:
                     if self.question_on:
                         try:
                             other = [address for address in self.clients if address != addr][0]
-                            win = f"You Won The Game"
-                            lose = f"You Lose The Game"
+                            win = "You Won The Game"
+                            lose = "You Lose The Game"
                             if int(data) == self.q[1]:
                                 self.udp_server_socket.sendto(win.encode("utf-8"),addr)
                                 self.udp_server_socket.sendto(lose.encode("utf-8"),other)
