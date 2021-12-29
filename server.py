@@ -8,12 +8,11 @@ import math
 
 def create_questions():
     while True:
-        x = random.randint(0,10)
+        x = random.randint(0, 10)
         y = random.randint(0, 10)
-        if x+y < 9:
-            tup = (f"{x} + {y}",x+y)
+        if x + y < 9:
+            tup = (f"{x} + {y}", x + y)
             yield tup
-
 
 
 class Server:
@@ -55,27 +54,34 @@ class Server:
                 else:
                     if self.question_on:
                         try:
+                            self.udp_server_socket.settimeout(None)
                             other = [address for address in self.clients if address != addr][0]
                             win = "You Won The Game"
                             lose = "You Lose The Game"
                             if int(data) == self.q[1]:
-                                self.udp_server_socket.sendto(win.encode("utf-8"),addr)
-                                self.udp_server_socket.sendto(lose.encode("utf-8"),other)
+                                self.udp_server_socket.sendto(win.encode("utf-8"), addr)
+                                self.udp_server_socket.sendto(lose.encode("utf-8"), other)
                                 self.question_on = False
                             else:
-                                self.udp_server_socket.sendto(win.encode("utf-8"),other)
-                                self.udp_server_socket.sendto(lose.encode("utf-8"),addr)
+                                self.udp_server_socket.sendto(win.encode("utf-8"), other)
+                                self.udp_server_socket.sendto(lose.encode("utf-8"), addr)
                                 self.question_on = False
                         except ValueError:
                             m = "Please Answer with integers numbers only!".capitalize()
                             self.udp_server_socket.sendto(m.encode('utf-8'), addr)
                     self.q = next(self.questions)
+                    self.udp_server_socket.settimeout(3)
                     self.send_to_all_client(self.q[0])
                     self.question_on = True
 
     def rcv_data(self, rcv_packet):
         while True:
-            data, addr = self.udp_server_socket.recvfrom(self.buffer_size)
+            try:
+                data, addr = self.udp_server_socket.recvfrom(self.buffer_size)
+            except socket.timeout as e:
+                self.send_to_all_client("Game finish due to timeout - DRAW")
+                self.udp_server_socket.settimeout(None)
+                pass
             if addr in self.clients:
                 rcv_packet.put((data, addr))
             elif len(self.clients) < 2:
@@ -92,10 +98,9 @@ class Server:
         m = '''Welcome to Quick Maths.\nPlayer 1: Instinct Player\n2: Rocket\nPlease answer the following question as fast as you can:'''
         self.send_to_all_client(m)
 
-    def send_to_all_client(self,m):
+    def send_to_all_client(self, m):
         for client in self.clients:
             self.udp_server_socket.sendto(m.encode("utf-8"), client)
-
 
 
 if __name__ == '__main__':

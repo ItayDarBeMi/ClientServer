@@ -5,6 +5,7 @@ import sys
 import random
 import getch
 
+
 class Client:
 
     def __init__(self, server_ip, buffer_size=1024):
@@ -17,6 +18,7 @@ class Client:
         self.game_on = False
         self.question_on = False
         self.udp_client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+        self.tcp_clien = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 
     def run_client(self):
         print('Client IP->' + str(self.host) + ' Port->' + str(self.port))
@@ -32,18 +34,23 @@ class Client:
 
         print("Connected successfully")
 
+        self.tcp_clien.connect((self.host,self.port))
+
+        threading.Thread(
+            target=self.client_rcv_data_tcp
+        ).start()
+
         while True:
             while not self.packets_q.empty():
                 self.packets_q.get()
-                #TODO uncoment the getch
+                # TODO uncoment the getch
                 # m = getch.getche()
-                self.udp_client_socket.settimeout(10)
                 m = input()
                 # self.udp_client_socket.settimeout(None)
-                self.udp_client_socket.sendto(m.encode("utf-8"), self.server)
+                self.tcp_clien.send(m.encode("utf-8"))
                 self.question_on = False
 
-    def client_rcv_data(self,):
+    def client_rcv_data(self):
         while True:
             try:
                 data, addr = self.udp_client_socket.recvfrom(self.buffer_size)
@@ -64,6 +71,29 @@ class Client:
                     print(data)
             except Exception as e:
                 self.packets_q.put(0)
+
+    def client_rcv_data_tcp(self):
+        while True:
+            try:
+                data, addr = self.tcp_clien.recvfrom(self.buffer_size)
+                data = data.decode("utf-8")
+                try:
+                    if len(data.strip().split("+")) == 2:
+                        self.question_on = True
+                except Exception as e:
+                    self.question_on = False
+                if self.game_on:
+                    if self.question_on:
+                        print(data)
+                        self.packets_q.put(0)
+                    else:
+                        print(data)
+                else:
+                    self.game_on = True
+                    print(data)
+            except Exception as e:
+                self.packets_q.put(0)
+
 
 
 if __name__ == '__main__':
