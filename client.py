@@ -3,13 +3,13 @@ import socket
 import threading
 import sys
 import random
-
+import getch
 
 class Client:
 
     def __init__(self, server_ip, buffer_size=1024):
         self.server_ip = server_ip
-        self.server = (str(self.server_ip), 5000)
+        self.server = (str(self.server_ip), 13117)
         self.buffer_size = buffer_size
         self.host = socket.gethostbyname(socket.gethostname())
         self.port = random.randint(6000, 10000)
@@ -35,7 +35,11 @@ class Client:
         while True:
             while not self.packets_q.empty():
                 self.packets_q.get()
+                #TODO uncoment the getch
+                # m = getch.getche()
+                self.udp_client_socket.settimeout(10)
                 m = input()
+                # self.udp_client_socket.settimeout(None)
                 self.udp_client_socket.sendto(m.encode("utf-8"), self.server)
                 self.question_on = False
 
@@ -55,13 +59,6 @@ class Client:
                         self.packets_q.put(0)
                     else:
                         print(data)
-                        # response = data.split("(")[1].split(")")
-                        # port = response[0].split(",")[1]
-                        # is_win = True if "Win" in response[1] else False
-                        # if is_win:
-                        #     print("Congratulations! You Won The Game")
-                        # else:
-                        #     print("Loser! You lose The Game")
                 else:
                     self.game_on = True
                     print(data)
