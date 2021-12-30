@@ -11,9 +11,9 @@ python3 server.py
 Run Client number 1
 
 ```bash
-python3 client.py 
+python3 client.py server_ip
 ```
 Run Client number 2
 ```bash
-python3 server.py
+python3 client.py server_ip
 ```
