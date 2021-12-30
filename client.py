@@ -43,10 +43,7 @@ class Client:
         while True:
             while not self.packets_q.empty():
                 self.packets_q.get()
-                # TODO uncoment the getch
                 m = getch.getche()
-                # m = input()
-                # self.udp_client_socket.settimeout(None)
                 self.tcp_client.sendto(m.encode("utf-8"),self.server)
                 self.question_on = False
 

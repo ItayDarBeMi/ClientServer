@@ -113,6 +113,9 @@ class SendOffers(ServerState):
             self.send_offers()
             time.sleep(1)
 
+        time.sleep(10)
+        self.send_all_players(self.opening_message(), self.players, self.con)
+        time.sleep(1)
         self.con.close()
         return self.players
 
@@ -135,16 +138,19 @@ class SendOffers(ServerState):
                     m += "\nWaiting For Another User To Join..."
                     self.con.sendto(m.encode('utf-8'), address)
                 elif len(self.players) == 1:
-                    self.players[address] = True
                     print("second client in")
                     m = f"Server Accept Request from {address}"
                     m += "\nThe Game Will Start Soon"
+                    self.players[address] = True
                     self.send_all_players(m, self.players, self.con)
                     return
                 else:
                     self.con.sendto(" -- Server Full, Return Later -- ".encode("utf-8"), address)
             except Exception as e:
                 pass
+
+    def opening_message(self):
+        return f'''Welcome to Quick Maths.\nPlayer 1: Instinct \nPlayer 2: Rocket\n==\nPlease answer the following question as fast as you can:'''
 
 
 class GameMode(ServerState):
