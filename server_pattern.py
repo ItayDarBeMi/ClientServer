@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from abc import ABC, abstractmethod
+from abc import ABC
 import socket
 import queue
 import threading
@@ -52,9 +52,13 @@ class Server:
 
     def run_server(self):
         while True:
+            self.tcp_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+            self.tcp_sock.bind((self.host, self.port))
+            self.tcp_sock.listen(2)
             self.players = self._state.wait_for_offers(self.host, self.port)
-            self.transition_to(GameMode(self.players, self.host, self.port))
+            self.transition_to(GameMode(self.players, self.host, self.port, self.tcp_sock))
             self._state.play_game(next(self.questions))
+            self.tcp_sock.close()
             self.players = {}
             self.transition_to(SendOffers(self.clients, self.players))
 
@@ -123,7 +127,6 @@ class SendOffers(ServerState):
         while True:
             try:
                 data, address = self.con.recvfrom(2048)
-                data = data.decode('utf-8')
                 if address not in self.clients:
                     self.clients[address] = True
                 if len(self.players) == 0:
@@ -142,54 +145,60 @@ class SendOffers(ServerState):
                 else:
                     self.con.sendto(" -- Server Full, Return Later -- ".encode("utf-8"), address)
             except Exception as e:
-                print("Message not open")
+                pass
 
 
 class GameMode(ServerState):
 
-    def __init__(self, players, host, port):
+    def __init__(self, players, host, port, sock):
         self.players = players
-        self.con = self.init_connection("TCP")
         self.host = host
         self.port = port
-        self.con.bind((self.host, self.port))
-        self.con.listen(2)
         self.game_on = True
+        self.con = sock
 
     def play_game(self, question):
         rcv_packet = queue.Queue()
-        for player in self.players:
-            self.con.sendto(question[0].encode("utf-8"), player)
-        t = threading.Thread(
-            target=self.rcv_data,
-            args=[rcv_packet]
-        )
-        t.start()
+        socket_dic = {}
+        connection_socket, address = self.con.accept()
+        connection_socket_2, address_2 = self.con.accept()
+        socket_dic[address] = connection_socket
+        socket_dic[address_2] = connection_socket_2
+        for addr in socket_dic:
+            socket_dic[addr].sendto(question[0].encode("utf-8"), addr)
+        threads = []
+        for addr in socket_dic:
+            t = threading.Thread(
+                target=self.rcv_data,
+                args=[rcv_packet, socket_dic[addr]]
+            )
+            threads.append(t)
+        for t in threads:
+            t.start()
         while self.game_on:
             while not rcv_packet.empty():
                 data, address = rcv_packet.get()
-                other = [address for address in self.players if address != address][0]
+                other = [add for add in socket_dic if add != address][0]
                 win = "You Won The Game"
                 lose = "You Lose The Game"
                 try:
                     if int(data) == question[1]:
-                        self.con.sendto(win.encode("utf-8"), address)
-                        self.con.sendto(lose.encode("utf-8"), other)
+                        socket_dic[address].send(win.encode("utf-8"))
+                        socket_dic[other].send(lose.encode("utf-8"))
                         self.game_on = False
                     else:
-                        self.con.sendto(win.encode("utf-8"), other)
-                        self.con.sendto(lose.encode("utf-8"), address)
+                        socket_dic[other].send(win.encode("utf-8"))
+                        socket_dic[address].send(lose.encode("utf-8"))
                         self.game_on = False
                 except Exception as e:
-                    print("Type Must Be Int")
-        self.con.close()
+                    pass
+        return
 
-    def rcv_data(self, rcv_packet):
+    def rcv_data(self, rcv_packet, sock):
         while True:
-            connection_socket, address = self.con.accept()
-            data, address = connection_socket.recvfrom(2048)
+            data, address = sock.recvfrom(2048)
             data = data.decode('utf-8')
-            rcv_packet.put((data, address))
+            rcv_packet.put((data, sock.getpeername()))
 
 
 if __name__ == "__main__":

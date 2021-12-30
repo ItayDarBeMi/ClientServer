@@ -18,7 +18,7 @@ class Client:
         self.game_on = False
         self.question_on = False
         self.udp_client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        self.tcp_clien = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+        self.tcp_client = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 
     def run_client(self):
         print('Client IP->' + str(self.host) + ' Port->' + str(self.port))
@@ -34,7 +34,7 @@ class Client:
 
         print("Connected successfully")
 
-        self.tcp_clien.connect((self.host,self.port))
+        self.tcp_client.connect(self.server)
 
         threading.Thread(
             target=self.client_rcv_data_tcp
@@ -47,7 +47,7 @@ class Client:
                 # m = getch.getche()
                 m = input()
                 # self.udp_client_socket.settimeout(None)
-                self.tcp_clien.send(m.encode("utf-8"))
+                self.tcp_client.sendto(m.encode("utf-8"),self.server)
                 self.question_on = False
 
     def client_rcv_data(self):
@@ -75,11 +75,12 @@ class Client:
     def client_rcv_data_tcp(self):
         while True:
             try:
-                data, addr = self.tcp_clien.recvfrom(self.buffer_size)
+                data, addr = self.tcp_client.recvfrom(self.buffer_size)
                 data = data.decode("utf-8")
                 try:
                     if len(data.strip().split("+")) == 2:
                         self.question_on = True
+                        self.packets_q.put((data, addr))
                 except Exception as e:
                     self.question_on = False
                 if self.game_on:
