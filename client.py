@@ -8,9 +8,9 @@ import getch
 
 class Client:
 
-    def __init__(self, server_ip, buffer_size=1024):
+    def __init__(self,server_ip,buffer_size=1024):
         self.server_ip = server_ip
-        self.server = (str(self.server_ip), 13117)
+        self.server = (self.server_ip, 13117)
         self.buffer_size = buffer_size
         self.host = socket.gethostbyname(socket.gethostname())
         self.port = random.randint(6000, 10000)
@@ -44,8 +44,8 @@ class Client:
             while not self.packets_q.empty():
                 self.packets_q.get()
                 # TODO uncoment the getch
-                # m = getch.getche()
-                m = input()
+                m = getch.getche()
+                # m = input()
                 # self.udp_client_socket.settimeout(None)
                 self.tcp_client.sendto(m.encode("utf-8"),self.server)
                 self.question_on = False
@@ -98,8 +98,7 @@ class Client:
 
 
 if __name__ == '__main__':
-    server_ip = sys.argv[1]
-    client = Client(server_ip)
+    client = Client(sys.argv[1])
     client.run_client()
 
 # check git

@@ -26,9 +26,9 @@ class Server:
 
     _state = None
 
-    def __init__(self, state: ServerState, host, buffer_size=1024):
+    def __init__(self, state: ServerState, buffer_size=1024):
         self.transition_to(state)
-        self.host = host
+        self.host = "0.0.0.0"
         self.buffer_size = buffer_size
         self.port = 13117
         self.clients = {}
@@ -201,5 +201,5 @@ class GameMode(ServerState):
 
 
 if __name__ == "__main__":
-    server = Server(SendOffers({}, {}), "127.0.0.1")
+    server = Server(SendOffers({}, {}))
     server.run_server()
