@@ -36,6 +36,9 @@ class Server:
         self.questions = create_questions()
         self.game_on = False
         self.question_on = False
+        self.tcp_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+        self.tcp_sock.bind((self.host, self.port))
+        self.tcp_sock.listen(2)
 
     def transition_to(self, state: ServerState):
         """
@@ -52,13 +55,9 @@ class Server:
 
     def run_server(self):
         while True:
-            self.tcp_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-            self.tcp_sock.bind((self.host, self.port))
-            self.tcp_sock.listen(2)
             self.players = self._state.wait_for_offers(self.host, self.port)
             self.transition_to(GameMode(self.players, self.host, self.port, self.tcp_sock))
             self._state.play_game(next(self.questions))
-            self.tcp_sock.close()
             self.players = {}
             self.transition_to(SendOffers(self.clients, self.players))
 
